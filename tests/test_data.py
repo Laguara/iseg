@@ -7,6 +7,7 @@ import pytest
 from src.data import (
     RAW_TO_INTERNAL_LABELS,
     load_analyze_volume,
+    normalize_nonzero_intensity,
     remap_labels,
     remove_trailing_singleton_dimension,
     validate_matching_shapes,
@@ -98,6 +99,33 @@ def test_rejects_unknown_label_values() -> None:
         remap_labels(labels)
 
 
+def test_normalizes_nonzero_voxels_and_preserves_zeros() -> None:
+    volume = np.array([[0, 1, 2, 3, 0]], dtype=np.int16)
+    original = volume.copy()
+
+    normalized = normalize_nonzero_intensity(volume)
+
+    expected = np.array([[0, -1.2247449, 0, 1.2247449, 0]], dtype=np.float32)
+    np.testing.assert_allclose(normalized, expected, rtol=1e-6, atol=1e-6)
+    assert normalized.shape == volume.shape
+    assert normalized.dtype == np.float32
+    np.testing.assert_array_equal(volume, original)
+
+
+def test_rejects_all_zero_volume() -> None:
+    volume = np.zeros((2, 3), dtype=np.int16)
+
+    with pytest.raises(ValueError, match="without non-zero voxels"):
+        normalize_nonzero_intensity(volume)
+
+
+def test_rejects_constant_nonzero_volume() -> None:
+    volume = np.array([[0, 5, 5, 0]], dtype=np.int16)
+
+    with pytest.raises(ValueError, match="zero non-zero variance"):
+        normalize_nonzero_intensity(volume)
+
+
 def test_rejects_missing_header(tmp_path: Path) -> None:
     header_path = tmp_path / "missing.hdr"
 
@@ -186,3 +214,26 @@ def test_remaps_real_training_labels_subject_1() -> None:
     assert sorted(np.unique(labels).tolist()) == sorted(RAW_TO_INTERNAL_LABELS)
     assert sorted(np.unique(remapped).tolist()) == [0, 1, 2, 3]
     assert remapped.shape == labels.shape
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        Path("data/training/subject-1-T1.hdr"),
+        Path("data/training/subject-1-T2.hdr"),
+    ],
+)
+def test_normalizes_real_training_modalities(relative_path: Path) -> None:
+    header_path = PROJECT_ROOT / relative_path
+    if not header_path.is_file():
+        pytest.skip("Local training dataset not available")
+
+    volume = load_analyze_volume(header_path)
+    normalized = normalize_nonzero_intensity(volume)
+    nonzero_values = normalized[volume != 0]
+
+    assert normalized.shape == volume.shape
+    assert normalized.dtype == np.float32
+    assert np.all(normalized[volume == 0] == 0)
+    assert np.mean(nonzero_values) == pytest.approx(0, abs=1e-5)
+    assert np.std(nonzero_values) == pytest.approx(1, abs=1e-5)
