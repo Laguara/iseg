@@ -1,0 +1,30 @@
+# Local datasets and generated outputs
+/data/
+/outputs/
+/checkpoints/
+
+# Model checkpoints and experiment artifacts
+*.ckpt
+*.pt
+*.pth
+
+# Python environments
+.venv/
+venv/
+
+# Python caches and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
