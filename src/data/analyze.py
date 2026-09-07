@@ -9,7 +9,7 @@ import numpy as np
 
 
 def load_analyze_volume(header_path: Union[str, PathLike]) -> np.ndarray:
-    """Load an Analyze ``.hdr``/``.img`` pair without preprocessing.
+    """Load an Analyze ``.hdr``/``.img`` pair without value preprocessing.
 
     Parameters
     ----------
@@ -20,8 +20,8 @@ def load_analyze_volume(header_path: Union[str, PathLike]) -> np.ndarray:
     Returns
     -------
     numpy.ndarray
-        The volume as represented by the Analyze image, retaining its original
-        shape and values.
+        The volume values from the Analyze image, with only a trailing
+        singleton dimension removed.
     """
 
     path = Path(header_path)
@@ -40,4 +40,17 @@ def load_analyze_volume(header_path: Union[str, PathLike]) -> np.ndarray:
     except nib.filebasedimages.ImageFileError as error:
         raise ValueError(f"Could not read Analyze pair: {path}") from error
 
-    return np.asanyarray(image.dataobj)
+    volume = np.asanyarray(image.dataobj)
+    return remove_trailing_singleton_dimension(volume)
+
+
+def remove_trailing_singleton_dimension(volume: np.ndarray) -> np.ndarray:
+    """Remove only a final dimension when its size is one.
+
+    All other dimensions and voxel values are left unchanged.
+    """
+
+    if volume.ndim == 0 or volume.shape[-1] != 1:
+        return volume
+
+    return np.squeeze(volume, axis=-1)

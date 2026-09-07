@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 import pytest
 
-from src.data import load_analyze_volume
+from src.data import load_analyze_volume, remove_trailing_singleton_dimension
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +18,25 @@ def test_loads_synthetic_analyze_volume(tmp_path: Path) -> None:
     loaded = load_analyze_volume(header_path)
 
     assert isinstance(loaded, np.ndarray)
+    assert loaded.shape == values.shape
+    np.testing.assert_array_equal(loaded, values)
+
+
+def test_removes_only_trailing_singleton_dimension() -> None:
+    values = np.arange(6, dtype=np.int16).reshape(1, 2, 3, 1)
+
+    loaded = remove_trailing_singleton_dimension(values)
+
+    assert loaded.shape == (1, 2, 3)
+    np.testing.assert_array_equal(loaded, values[..., 0])
+
+
+def test_leaves_volume_without_trailing_singleton_unchanged() -> None:
+    values = np.arange(24, dtype=np.int16).reshape(2, 3, 4)
+
+    loaded = remove_trailing_singleton_dimension(values)
+
+    assert loaded is values
     assert loaded.shape == values.shape
     np.testing.assert_array_equal(loaded, values)
 
@@ -64,5 +83,7 @@ def test_loads_real_analyze_volumes(relative_path: Path) -> None:
     assert loaded.size > 0
     assert np.issubdtype(loaded.dtype, np.number)
 
-    reference = nib.load(str(header_path))
-    assert loaded.shape == reference.shape
+    reference = np.asanyarray(nib.load(str(header_path)).dataobj)
+    expected = remove_trailing_singleton_dimension(reference)
+    assert loaded.shape == expected.shape
+    np.testing.assert_array_equal(loaded, expected)
