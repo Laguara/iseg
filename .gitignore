@@ -1,0 +1,29 @@
+# Données iSeg : volumineuses, soumises aux règles de non-redistribution.
+data/
+datasets/
+
+# Environnements Python et caches générés automatiquement.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Résultats produits par les entraînements et les évaluations.
+outputs/
+runs/
+checkpoints/
+artifacts/
+exports/
+*.pt
+*.pth
+*.ckpt
+
+# Fichiers propres à une machine ou à un éditeur.
+.DS_Store
+.idea/
+.vscode/
+.env
