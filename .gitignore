@@ -1,6 +1,6 @@
 # Données iSeg : volumineuses, soumises aux règles de non-redistribution.
-data/
-datasets/
+/data/
+/datasets/
 
 # Environnements Python et caches générés automatiquement.
 .venv/
@@ -9,15 +9,17 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 .coverage
 htmlcov/
+.ipynb_checkpoints/
 
 # Résultats produits par les entraînements et les évaluations.
-outputs/
-runs/
-checkpoints/
-artifacts/
-exports/
+/outputs/
+/runs/
+/checkpoints/
+/artifacts/
+/exports/
 *.pt
 *.pth
 *.ckpt
