@@ -5,7 +5,9 @@ import numpy as np
 import pytest
 
 from src.data import (
+    RAW_TO_INTERNAL_LABELS,
     load_analyze_volume,
+    remap_labels,
     remove_trailing_singleton_dimension,
     validate_matching_shapes,
 )
@@ -75,6 +77,25 @@ def test_rejects_mismatched_labels() -> None:
 
     with pytest.raises(ValueError, match=r"labels=\(2, 3, 5\)"):
         validate_matching_shapes(t1, t2, labels)
+
+
+def test_remaps_raw_labels_to_internal_class_indices() -> None:
+    labels = np.array([[0, 10], [150, 250]], dtype=np.uint8)
+    original = labels.copy()
+
+    remapped = remap_labels(labels)
+
+    np.testing.assert_array_equal(remapped, np.array([[0, 1], [2, 3]], dtype=np.uint8))
+    assert remapped.shape == labels.shape
+    assert remapped.dtype == np.uint8
+    np.testing.assert_array_equal(labels, original)
+
+
+def test_rejects_unknown_label_values() -> None:
+    labels = np.array([[0, 42]], dtype=np.uint8)
+
+    with pytest.raises(ValueError, match=r"Unknown label values: \[42\]"):
+        remap_labels(labels)
 
 
 def test_rejects_missing_header(tmp_path: Path) -> None:
@@ -152,3 +173,16 @@ def test_validates_testing_subject_23_without_labels() -> None:
     t1, t2 = [load_analyze_volume(path) for path in header_paths]
 
     validate_matching_shapes(t1, t2)
+
+
+def test_remaps_real_training_labels_subject_1() -> None:
+    header_path = PROJECT_ROOT / "data/training/subject-1-label.hdr"
+    if not header_path.is_file():
+        pytest.skip("Local training dataset not available")
+
+    labels = load_analyze_volume(header_path)
+    remapped = remap_labels(labels)
+
+    assert sorted(np.unique(labels).tolist()) == sorted(RAW_TO_INTERNAL_LABELS)
+    assert sorted(np.unique(remapped).tolist()) == [0, 1, 2, 3]
+    assert remapped.shape == labels.shape
