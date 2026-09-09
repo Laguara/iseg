@@ -2,3 +2,4 @@ numpy
 nibabel
 pytest
 matplotlib
+torch
