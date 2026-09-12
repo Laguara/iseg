@@ -50,5 +50,16 @@ Pour vérifier rapidement les vraies données avant un entraînement complet :
 ```
 
 Le prochain script doit charger ce checkpoint, reconstruire les prédictions des
-volumes 9 et 10 et calculer le Dice par tissu et par patient entier. Les sujets
-11-23 n'ont pas de labels : ils ne peuvent pas servir à calculer un Dice.
+volumes 9 et 10 et calculer le Dice par tissu et par patient entier.
+
+## Evaluer le checkpoint
+
+```bash
+.venv/bin/python scripts/evaluate_baseline.py \
+  --data /Users/foqker/Downloads/iSeg-2017-Training \
+  --checkpoint outputs/baseline_2p5d.pt
+```
+
+Le script imprime et écrit le Dice fond/LCR/SG/SB de chaque patient 9 et 10,
+puis leur moyenne au premier plan. Les sujets 11-23 n'ont pas de labels : ils
+ne peuvent pas servir à calculer un Dice.
