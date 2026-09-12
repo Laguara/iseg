@@ -1,42 +1,54 @@
-# iSeg — première segmentation 2.5D
+# iSeg — baseline 2.5D
 
-Le premier objectif n'est pas d'obtenir tout de suite un bon score : c'est de
-faire fonctionner et comprendre une boucle d'apprentissage complète sur les
-vraies IRM iSeg.
+Le projet segmente chaque pixel d'une coupe IRM en quatre classes : fond, LCR,
+substance grise et substance blanche. L'entrée 2.5D contient six canaux : trois
+coupes T1 voisines et trois coupes T2 voisines.
 
-Le fichier à lire est [train_simple.py](train_simple.py). Il contient, dans cet
-ordre :
+## Structure
 
-1. le petit U-Net 2.5D ;
-2. le chargement des vraies coupes avec le Dataset ;
-3. le forward ;
-4. la Cross-Entropy ;
-5. le calcul des gradients ;
-6. la mise à jour des poids par Adam.
+- `src/data/` : lecture des paires Analyze `.hdr/.img`, normalisation, labels et
+  construction des six canaux ;
+- `src/models/` : U-Net 2.5D légère ;
+- `src/training/` : Cross-Entropy et une étape d'apprentissage testable ;
+- `scripts/smoke_train.py` : vérifie le mécanisme sur une tâche artificielle ;
+- `scripts/train_baseline.py` : entraîne sur les vraies IRM ;
+- `tests/` : vérifications de forme, données, loss et gradients.
 
-Le dossier `src/data/` est séparé car il est responsable uniquement de la
-lecture fiable des fichiers iSeg (`.hdr` + `.img`) et de la construction des
-six canaux 2.5D. Le script l'utilise directement.
-
-## Installer et lancer le premier essai
+## Installation
 
 ```bash
 .venv/bin/pip install -r requirements.txt
-.venv/bin/python train_simple.py \
-  --data /Users/foqker/Downloads/iSeg-2017-Training
 ```
 
-Par défaut, le script utilise le sujet 1 et cinq batchs de deux vraies coupes.
-C'est volontairement petit : cela valide le mécanisme sans attendre longtemps.
-
-Pour parcourir toutes les coupes du sujet 1 :
+## Vérifier avant d'entraîner
 
 ```bash
-.venv/bin/python train_simple.py \
-  --data /Users/foqker/Downloads/iSeg-2017-Training \
-  --max-batches 0
+.venv/bin/python -m pytest -q
+.venv/bin/python scripts/smoke_train.py --steps 40
 ```
 
-Plus tard, après avoir compris ce premier résultat, on pourra entraîner sur les
-sujets 1 à 8 et réserver 9 et 10 pour la validation. Ne pas annoncer de score
-scientifique avant cette séparation patient par patient.
+Le smoke test vérifie seulement que les poids sont modifiés et que la loss
+diminue. Il ne mesure aucune qualité médicale.
+
+## Entraîner la baseline réelle
+
+```bash
+.venv/bin/python scripts/train_baseline.py \
+  --data /Users/foqker/Downloads/iSeg-2017-Training \
+  --epochs 10
+```
+
+Le script entraîne sur les sujets 1-8, mesure la Cross-Entropy sur les patients
+9-10 et sauvegarde le meilleur checkpoint dans `outputs/baseline_2p5d.pt`.
+
+Pour vérifier rapidement les vraies données avant un entraînement complet :
+
+```bash
+.venv/bin/python scripts/train_baseline.py \
+  --data /Users/foqker/Downloads/iSeg-2017-Training \
+  --epochs 1 --max-train-batches 1 --max-validation-batches 1
+```
+
+Le prochain script doit charger ce checkpoint, reconstruire les prédictions des
+volumes 9 et 10 et calculer le Dice par tissu et par patient entier. Les sujets
+11-23 n'ont pas de labels : ils ne peuvent pas servir à calculer un Dice.
