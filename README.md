@@ -12,7 +12,12 @@ coupes T1 voisines et trois coupes T2 voisines.
 - `src/training/` : Cross-Entropy et une étape d'apprentissage testable ;
 - `scripts/smoke_train.py` : vérifie le mécanisme sur une tâche artificielle ;
 - `scripts/train_baseline.py` : entraîne sur les vraies IRM ;
+- `scripts/evaluate_baseline.py` : calcule le Dice entier de chaque patient ;
+- `scripts/visualize_prediction.py` : crée une figure IRM / label / prédiction ;
+- `scripts/predict_test.py` : produit les volumes prédits des sujets 11-23 ;
 - `tests/` : vérifications de forme, données, loss et gradients.
+
+Le déroulé et les choix du projet sont expliqués dans [RAPPORT.md](RAPPORT.md).
 
 ## Installation
 
@@ -63,3 +68,26 @@ volumes 9 et 10 et calculer le Dice par tissu et par patient entier.
 Le script imprime et écrit le Dice fond/LCR/SG/SB de chaque patient 9 et 10,
 puis leur moyenne au premier plan. Les sujets 11-23 n'ont pas de labels : ils
 ne peuvent pas servir à calculer un Dice.
+
+## Créer une figure pour le rapport
+
+```bash
+.venv/bin/python scripts/visualize_prediction.py \
+  --data /Users/foqker/Downloads/iSeg-2017-Training \
+  --checkpoint outputs/baseline_2p5d.pt \
+  --subject 9 --slice 128
+```
+
+La figure est enregistrée dans `outputs/validation_example.png`.
+
+## Prédire les sujets test sans labels
+
+```bash
+.venv/bin/python scripts/predict_test.py \
+  --data /Users/foqker/Downloads/iSeg-2017-Testing \
+  --checkpoint outputs/baseline_2p5d.pt
+```
+
+Le script écrit une prédiction `.npy` interne (classes 0 à 3) et une paire
+Analyze `.hdr/.img` avec les valeurs iSeg 0/10/150/250. Aucun Dice n'est
+possible sur ces sujets, car le jeu de test ne contient pas les labels.
